@@ -1,6 +1,6 @@
 
 
-#2
+#### Q2
 library(AppliedPredictiveModeling)
 data("concrete")
 library(caret)
@@ -15,17 +15,16 @@ cutmix <- cut2(training$CompressiveStrength, g= 3)
 
 
 p1 <-qplot(cutmix,training$CompressiveStrength,color=cutmix)
+p2 <-qplot(Cement,CompressiveStrength,color=cutmix,data=training)
+p3 <-qplot(BlastFurnaceSlag,CompressiveStrength,color=cutmix,data=training)
+p4 <-qplot(FlyAsh,CompressiveStrength,color=cutmix,data=training)
+p5 <-qplot(Water,CompressiveStrength,color=cutmix,data=training)
+p6 <-qplot(Superplasticizer,CompressiveStrength,color=cutmix,data=training)
+p7 <-qplot(CoarseAggregate,CompressiveStrength,color=cutmix,data=training)
+p8 <-qplot(FineAggregate,CompressiveStrength,color=cutmix,data=training)
+p9 <-qplot(Age,CompressiveStrength,color=cutmix,data=training)
 
-#p2 <-qplot(Water,CompressiveStrength,color=cutmix,data=training)
-
-p3 <-qplot(Age,CompressiveStrength,color=cutmix,data=training)
-
-#p4 <-qplot(Cement,CompressiveStrength,color=cutmix,data=training)
-
-p5 <-qplot(FineAggregate,CompressiveStrength,color=cutmix,data=training)
-p9 <-qplot(FlyAsh,CompressiveStrength,color=cutmix,data=training)
-
-grid.arrange(p1,p3,p5,p9, nrow=2, ncol=2)
+grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9, nrow=3, ncol=3)
 
 ### Q3
 set.seed(1000)
