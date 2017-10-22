@@ -32,6 +32,13 @@ Prediction blending
 
 ## Book 
 Elements of Statistical Learning
+https://web.stanford.edu/~hastie/Papers/ESLII.pdf
+
+### U Penn
+https://onlinecourses.science.psu.edu/stat505/node/49
+
+http://appliedpredictivemodeling.com/
+
 
 ### The unreasonable effecitveness of Data https://www.youtube.com/watch?v=yvDCzhbjYWs
 
