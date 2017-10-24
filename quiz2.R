@@ -1,3 +1,6 @@
+install.packages("AppliedPredictiveModeling")
+install.packages("caret")
+install.packages("Hmisc")
 
 
 #### Q2
@@ -26,7 +29,13 @@ p9 <-qplot(Age,CompressiveStrength,color=cutmix,data=training)
 
 grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9, nrow=3, ncol=3)
 
-### Q3
+### Q3 -- Log transform
+## https://www.youtube.com/watch?v=5571wc0iWCI
+library(AppliedPredictiveModeling)
+library(caret)
+library(Hmisc)
+data("concrete")
+
 set.seed(1000)
 inTrain = createDataPartition(mixtures$CompressiveStrength, p=3/4)[[1]]
 training = mixtures[ inTrain,]
@@ -36,7 +45,17 @@ testing = mixtures[- inTrain,]
 pQ3 <-qplot(training$Superplasticizer, geom="histogram") 
 
 pQ3l <- qplot(log(training$Superplasticizer), geom="histogram") 
+ 
 grid.arrange(pQ3,pQ3l, ncol=2)
+## the plot of log is more normal
+## summary shows lots of zeros
+summary(training$Superplasticizer)
+##
+
+## shows - inf ( negative infinity) because of zero values
+summary(log(training$Superplasticizer))
+
+
 
 ### Q4 
 library(caret)
@@ -56,7 +75,7 @@ prePr1 <- preProcess(df1,method = "pca", thresh = 0.8)
 prePr1$numComp
 
 ### Q5
-nstall.packages('e1071', dependencies=TRUE)
+
 library(caret)
 library(AppliedPredictiveModeling)
 library(dplyr)

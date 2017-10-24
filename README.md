@@ -58,6 +58,8 @@ http://www.jstatsoft.org/v28/i05/paper
 Model Tuning
 http://topepo.github.io/caret/model-training-and-tuning.html
 
+Udacity excellent explination of log transform
+https://www.youtube.com/watch?v=5571wc0iWCI
 
 
 
