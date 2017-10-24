@@ -1,6 +1,7 @@
 install.packages("AppliedPredictiveModeling")
 install.packages("caret")
 install.packages("Hmisc")
+install.packages("e1071")
 
 
 #### Q2
@@ -74,7 +75,7 @@ df1 <- training[ , grepl( "^IL" , names( training ) ) ]
 prePr1 <- preProcess(df1,method = "pca", thresh = 0.8)
 prePr1$numComp
 
-### Q5
+### Q5  Accuracy of 2 models
 
 library(caret)
 library(AppliedPredictiveModeling)
@@ -92,10 +93,12 @@ df1 <- training[ , grepl( "^IL" , names( training ) ) ]
 trainingIL <- cbind(df1, training$diagnosis)
 names(trainingIL)[names(trainingIL) == 'training$diagnosis'] <- 'diagnosis'
 
-prePr1 <- preProcess(df1,method = "pca", thresh = 0.8)
+preProc1 <- preProcess(df1,method = "pca", thresh = 0.8)
 
-alPC <- predict(prePr1,df1)
-fit1 <- train(trainingIL$diagnosis ~ . , method = "glm", data= alPC, na.action="na.exclude")
+
+fit1 <- train(diagnosis ~ . , method = "glm", data=training,na.action="na.exclude")
+confusionMatrix(predict(fit1),training$diagnosis,dnn=c("Impaired","Control"))
+
 # train with pca built in
-fit2 <- train(trainingIL$diagnosis ~ . , method = "glm", preProcess= "pca", data=trainingIL)
-confusionMatrix(trainingIL$diagnosis,predict(fit2))
+fit2 <- train(diagnosis ~ . , method = "glm", preProcess= "pca", data=trainingIL,na.action="na.exclude")
+confusionMatrix(predict(fit2))
