@@ -39,7 +39,14 @@ https://onlinecourses.science.psu.edu/stat505/node/49
 
 http://appliedpredictivemodeling.com/
 
+## Udacity ML
+https://www.youtube.com/watch?v=ICKBWIkfeJ8&list=PLAwxTw4SYaPkQXg8TkVdIvYv4HfLG7SiH
 
+## Good book on all basic modeling and prediction *****
+http://www.biostat.jhsph.edu/~ririzarr/Teaching/649/
+
+### lecture notes 
+http://www.cbcb.umd.edu/~hcorrada/PracticalML/
 ### The unreasonable effecitveness of Data https://www.youtube.com/watch?v=yvDCzhbjYWs
 
 ### Carrat Package http://topepo.github.io/caret/index.html
