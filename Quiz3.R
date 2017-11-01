@@ -28,7 +28,7 @@ testing = segmentationOriginal[- inTrain,]
 set.seed(125)
 
 fit1 <- rpart(Class ~ . , data = testing)
-
+#yes to the left, no to the right
 plot(fit1, uniform = TRUE)
 
 #text(fit1, use.n=TRUE, all=TRUE, cex=.8)
