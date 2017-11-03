@@ -55,6 +55,9 @@ Caret tutorials:
 http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
 http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
 
+Caret How To Estimate Model Accuracy in R Using 
+https://machinelearningmastery.com/how-to-estimate-model-accuracy-in-r-using-the-caret-package/
+
 preProcessing in Caret
 http://topepo.github.io/caret/pre-processing.html
 
