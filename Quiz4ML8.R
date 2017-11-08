@@ -20,11 +20,14 @@ install.packages("randomForest")
 ## Q1   ##########
 ##https://www.r-bloggers.com/random-forests-in-r/
 #https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr
+
+
 library(ElemStatLearn)
 require(randomForest)
 data(vowel.train)
 data(vowel.test)
 
+#Set the variable y to be a factor variable in both the training and test set
 vowel.train$y <- as.factor(vowel.train$y)
 vowel.test$y <- as.factor(vowel.test$y)
 
@@ -33,25 +36,32 @@ vowel.test$y <- as.factor(vowel.test$y)
 library(randomForest)
 library(caret)
 
-##fit11=randomForest(y ~ . , data = vowel.train )
-##fit12=gbm(y ~ . , data = vowel.train )
-
 ##http://topepo.github.io/caret/model-training-and-tuning.html
 ## use set.seed just prior to calling train
+## set the seed to 33833.
 set.seed(33833)
+#Fit (1) a random forest predictor relating the factor variable y to the
+#remaining variables
+# Fit  (2) a boosted predictor using the "gbm" method.
+# Fit these both with the train() command in the caret package.
 fit1rf = train(y ~ . , data = vowel.train, method = 'rf' )
 fit1gbm =train(y ~ . , data = vowel.train , method = 'gbm', 
             verbose=FALSE )
 
-prf = predict(fit1rf,vowel.test)
-pgbm = predict(fit1gbm,vowel.test)
-
+#What are the accuracies for the two approaches on the test data set? 
+# predict based on trained
 actualY = vowel.test$y
+
+prf = predict(fit1rf,newdata =vowel.test)
+pgbm = predict(fit1gbm, newdata=vowel.test[-y])
+
+
 ## compare actual to predicted , cut
-cmrf = confusionMatrix(actualY, prf)    ## RF
+cmrf = confusionMatrix( prf, actualY)    ## RF
 cmgbm = confusionMatrix(actualY, pgbm)    ## gbm
 
 
+#What is the accuracy among the test set samples where the two methods agree?
 
 ### Q2  #################
 ##stacking classification 
@@ -68,18 +78,38 @@ inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
 training = adData[ inTrain,]
 testing = adData[-inTrain,]
 
+#Set the seed to 62433 
+#predict diagnosis with all the other variables using:
+#       a random forest ("rf")
+#       boosted trees ("gbm") 
+#       linear discriminant analysis ("lda") model.
+
+#Does the data contain missing values
+sum(is.na(training))
 set.seed(62433)
 
-fit2rf =train(diagnosis ~ . , data = training, method = 'rf' )
+fit2rf =train(diagnosis ~ .  , data = training, method = 'rf' )
+p2rf <- predict(fit2rf,newdata = testing[-1])
+
 fit2gbm =train(diagnosis ~ . , data = training , method = 'gbm', 
             verbose=FALSE )
-fit2ida =train(diagnosis ~ . , data = training , method = 'ida', 
+p2gbm <- predict(fit2gbm,newdata = testing)
+
+fit2lda =train(diagnosis ~ . , data = training , method = 'lda', 
             verbose=FALSE )
 
+p2lda <- predict(fit2lda,newdata = testing[-1])
+
+cm2rf = confusionMatrix(testing$dianosis,p2rf)
+
 ## stack perdictions using rf
+## ** good link
+# https://www.analyticsvidhya.com/blog/2017/02/introduction-to-ensembling-along-with-implementation-in-r/
 
+## What is the resulting accuracy on the test set?
+## Is it better or worse than each of the individual predictions?
 
-#### Q3
+#### Q3  ##################
 #fit a lasso model to predict Compressive Strength.
 #Which variable is the last coefficient to be set to zero 
 #as the penalty increases? (Hint: it may be useful to look up ?plot.enet).
@@ -102,7 +132,7 @@ class(lasso$finalModel)
 plot.enet(fit3lasso$finalModel,xvar="penalty",use.color = TRUE)
 
 
-#### Q4 ###
+#### Q4 ###############
 ##install.packages('forecast', dependencies = TRUE)
 library(data.table)
 library(forecast)
@@ -135,7 +165,7 @@ p4 = predict(fit4bats, newdata = testing)
 #the 95% prediction interval bounds?
 
 
-#### Q5 ###
+#### Q5 #################
 #https://cran.r-project.org/web/packages/e1071/vignettes/svmdoc.pdf
 
 set.seed(3523)
