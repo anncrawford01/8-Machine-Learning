@@ -52,16 +52,21 @@ fit1gbm =train(y ~ . , data = vowel.train , method = 'gbm',
 # predict based on trained
 actualY = vowel.test$y
 
-prf = predict(fit1rf,newdata =vowel.test)
-pgbm = predict(fit1gbm, newdata=vowel.test[-y])
+prf = predict(fit1rf,vowel.test[,2:11])
+pgbm = predict(fit1gbm, vowel.test[,2:11])
 
 
 ## compare actual to predicted , cut
-cmrf = confusionMatrix( prf, actualY)    ## RF
-cmgbm = confusionMatrix(actualY, pgbm)    ## gbm
+cmrf = confusionMatrix( actualY, prf)    ## RF
+cmgbm = confusionMatrix(  actualY, pgbm)    ## gbm
+## rf accuracy
+cmrf$overall["Accuracy"]
 
+## gbm accuracy 
+cmgbm$overall["Accuracy"]
 
 #What is the accuracy among the test set samples where the two methods agree?
+
 
 ### Q2  #################
 ##stacking classification 
@@ -89,25 +94,36 @@ sum(is.na(training))
 set.seed(62433)
 
 fit2rf =train(diagnosis ~ .  , data = training, method = 'rf' )
-p2rf <- predict(fit2rf,newdata = testing[-1])
+p2rf <- predict(fit2rf, testing[,-1])
 
-fit2gbm =train(diagnosis ~ . , data = training , method = 'gbm', 
-            verbose=FALSE )
-p2gbm <- predict(fit2gbm,newdata = testing)
+fit2gbm =train(diagnosis ~ . , data = training , method = 'gbm',verbose=FALSE )
+p2gbm <- predict(fit2gbm,testing[,-1])
 
-fit2lda =train(diagnosis ~ . , data = training , method = 'lda', 
-            verbose=FALSE )
+fit2lda =train(diagnosis ~ . , data = training , method = 'lda', verbose=FALSE )
+p2lda <- predict(fit2lda, testing[,-1])
 
-p2lda <- predict(fit2lda,newdata = testing[-1])
+rftab = table(p2rf, testing$diagnosis)
+cm2rf = confusionMatrix(rftab)
 
-cm2rf = confusionMatrix(testing$dianosis,p2rf)
+gbmtab = table(p2gbm, testing$diagnosis)
+cm2gbm = confusionMatrix(gbmtab)
+
+ldatab = table(p2gbm, testing$diagnosis)
+cm2lda = confusionMatrix(ldatab)
+
+cm2rf$overall["Accuracy"]
+cm2gbm$overall["Accuracy"]
+cm2lda$overall["Accuracy"]
 
 ## stack perdictions using rf
 ## ** good link
 # https://www.analyticsvidhya.com/blog/2017/02/introduction-to-ensembling-along-with-implementation-in-r/
-
+# https://www.r-bloggers.com/an-intro-to-ensemble-learning-in-r/
+# https://machinelearningmastery.com/machine-learning-ensembles-with-r/
 ## What is the resulting accuracy on the test set?
 ## Is it better or worse than each of the individual predictions?
+
+
 
 #### Q3  ##################
 #fit a lasso model to predict Compressive Strength.
