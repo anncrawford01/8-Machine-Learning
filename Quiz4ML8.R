@@ -152,10 +152,10 @@ plot.enet(fit3lasso$finalModel,xvar="penalty",use.color = TRUE)
 ##install.packages('forecast', dependencies = TRUE)
 library(data.table)
 library(forecast)
+library(caret)
 library(magrittr)   ## for %>% operator
 library(rpart)
-
-
+setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
 ##"https://d396qusza40orc.cloudfront.net/predmachlearn/gaData.csv'"
 ##download into current dir
 ##setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
@@ -168,15 +168,17 @@ dat = read.csv("gaData.csv")
 training = dat[year(dat$date) < 2012,]
 testing = dat[(year(dat$date)) > 2011,]
 tstrain = ts(training$visitsTumblr)
+tstest = ts(testing$visitsTumblr)
 
-tsx = ts(dat)
-plot(tsx[,3])
-
+#https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/bats
+#https://cran.r-project.org/web/packages/forecast/forecast.pdf
 #Fit a model using the bats() function in the forecast package to the training time series.
 fit4bats = bats(tstrain)
 # Then forecast this model for the remaining time points. 
-p4 = predict(fit4bats, newdata = testing)
+f4 = forecast(fit4bats,h = length(testing$visitsTumblr), level = 95)
 
+##compare  train to test
+acc4 <- accuracy(f4, testing$visitsTumblr)
 #For how many of the testing points is the true value within
 #the 95% prediction interval bounds?
 
@@ -200,5 +202,19 @@ set.seed(325)
 #Predict on the testing set. What is the RMSE?
 
 fit5  <- svm(CompressiveStrength ~ ., data = training)
+
+p5 <- predict(fit5, testing[,-9])
+
+## caluclate RMSE
+rmse1 = function(a,p){
+        # actual - predictied 
+        sqrt( mean((a-p)^2) )
+}
+
+rmse1(testing[,9],p5)
+
+
+
+
 
 
