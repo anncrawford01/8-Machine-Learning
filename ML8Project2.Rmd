@@ -1,5 +1,5 @@
 ---
-title: "ML8 Fitness CLass Analysis"
+title: "ML8 Fitness Class Analysis"
 author: "Ann Crawford"
 date: "November 9, 2017"
 output: html_document
@@ -36,35 +36,71 @@ dim(trainds)
 #pricipal comp anal https://www.analyticsvidhya.com/blog/2016/03/practical-guide-principal-component-analysis-python/
 #https://machinelearningmastery.com/feature-selection-with-the-caret-r-package/
 
-
-#sapply(trainds, function(x) length(unique(x)))
-
+# check NA's
 NAcnt <-sapply(trainds, function(x) sum(is.na(x)))
 table(NAcnt)
 
 ## 2 groups of predictors
 ## 67 variables with this count
 Nbr2 <- trainds[,which(NAcnt == 19216)]
-
 ## 60 varables that have no NA's
 NoNA <- trainds[,which(NAcnt == 0)]
 
-## remove the following meta data used for data colleciton along with the dependent variable classe
-predictors <- subset(NoNA, select=-c(X,user_name, classe,cvtd_timestamp,raw_timestamp_part_1,raw_timestamp_part_2, new_window))
+## remove varables with No information i.e all NA's
+trainds2 <- trainds[,which(NAcnt != nrow(trainds))]
 
-## remove highly correlated predictors
-predCor <- cor(predictors)
-highlyCorDescr <- findCorrelation(predCor, cutoff = .75)
-predfiltered <- predictors[,-highlyCorDescr]
-
-## Use built in Recursive Feature Elimination from rf, gbm,  in Caret
-
-#Subsampling For Class Imbalances
-table(NoNA$classe)
+#Subsampling For Class Imbalances - 
+table(trainds2$classe)
 
 ```
 ```{r featureSelection}
-# find correlation variables
+##https://www.packtpub.com/mapt/book/big_data_and_business_intelligence/9781783984527/5/ch05lvl1sec38/feature-selection-for-svms
+
+## Use Caret built in Recursive Feature Elimination from rf, gbm and K-fold cross validation
+# Partion Data into training and test/holdback via resampling
+
+# remove meta data used for data collection and 
+x <- subset(trainds2, select=-c(X,user_name, classe, cvtd_timestamp, new_window,amplitude_yaw_belt, amplitude_yaw_dumbbell, amplitude_yaw_forearm ))
+
+## remove highly correlated predictors
+predCor <- cor(x, use = "complete.obs")
+highlyCorDescr <- findCorrelation(predCor, cutoff = .75)
+x <- predictors[,-highlyCorDescr]
+
+library(magrittr)
+y <-as.numeric(trainds2$classe)   # change Y to numeric
+
+unclass(y) %>% as.numeric 
+
+##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
+# check for rank deficient coefs, those that are highly correlated
+fit <- lm(y ~ ., data=x)
+#predict(fit, trainds2)
+length(fit$coefficients) > fit$rank
+
+
+subsets <- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
+
+normalization <- preProcess(x)
+x <- predict(normalization, x)
+x <- as.data.frame(x)
+
+set.seed(10)
+
+
+## repeated cross validation 
+ctrl <- rfeControl(functions = lmFuncs,
+                   method = "repeatedcv",
+                   repeats = 5,
+                   verbose = FALSE)
+# use classifiaction metric
+lmProfile <- rfe(x, y,
+                 sizes = subsets,metric ="Accuracy",size = 15,
+                 rfeControl = ctrl)
+
+lmProfile
+
+
 
 
 ```
