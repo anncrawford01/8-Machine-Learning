@@ -16,11 +16,13 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r readData}
-setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
-trainds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"))
-testds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
-
-
+library(caret)
+setwd("c:/Data/Coursera/8-Machine-Learning")
+#trainds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"))
+#testds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
+testds <-read.csv("pml-testing.csv")
+trainds <-read.csv("pml-training.csv")
+allfactors <- sapply(trainds,is.factor )
 ```
 
 
@@ -29,7 +31,25 @@ testds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-
 sum(is.na(trainds))
 
 dim(trainds)
+#19622 obs 159 variables - classe = y
 #str(trainds) 
+#pricipal comp anal https://www.analyticsvidhya.com/blog/2016/03/practical-guide-principal-component-analysis-python/
+#https://machinelearningmastery.com/feature-selection-with-the-caret-r-package/
+
+# look at predictors
+preds <- subset(trainds, select=-c(classe,user_name,new_window,amplitude_yaw_dumbbell))
+allpredictors <- subset(trainds, select = -c(classe))
+nzv <- nearZeroVar(allpredictors, saveMetrics = TRUE)
+nzv[nzv$nzv,][1:161,]
+
+sapply(trainds, function(x) length(unique(x)))
+
+NAcnt <-sapply(trainds, function(x) sum(is.na(x)))
+```
+```{r featureSelection}
+# find correlation variables
+
+
 
 ```
 
