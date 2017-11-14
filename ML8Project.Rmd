@@ -17,7 +17,8 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r readData}
 library(caret)
-setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+#setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+setwd("C:/Data/Coursera/8-Machine-Learning")
 #trainds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"))
 #testds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
 testds <-read.csv("pml-testing.csv",na.strings = c("NA","NaN","","#DIV/0!"))

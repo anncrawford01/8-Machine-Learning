@@ -17,7 +17,8 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r readData}
 library(caret)
-setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+#setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+setwd("C:/Data/Coursera/8-Machine-Learning")
 #trainds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"))
 #testds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
 testds <-read.csv("pml-testing.csv",na.strings = c("NA","NaN","","#DIV/0!"))
@@ -38,7 +39,7 @@ dim(trainds)
 
 # check NA's
 NAcnt <-sapply(trainds, function(x) sum(is.na(x)))
-table(NAcnt)
+#table(NAcnt)
 
 ## 2 groups of predictors
 ## 67 variables with this count
@@ -49,9 +50,9 @@ NoNA <- trainds[,which(NAcnt == 0)]
 ## remove varables with No information i.e all NA's
 trainds2 <- trainds[,which(NAcnt != nrow(trainds))]
 
-#Subsampling For Class Imbalances - 
-table(trainds2$classe)
-
+#Subsampling For Class Imbalances - Not too bad
+A <-table(trainds2$classe)
+sapply(A, function(x,d = sum(A)) x/d)
 ```
 ```{r featureSelection}
 ##https://www.packtpub.com/mapt/book/big_data_and_business_intelligence/9781783984527/5/ch05lvl1sec38/feature-selection-for-svms
@@ -67,10 +68,12 @@ predCor <- cor(x, use = "complete.obs")
 highlyCorDescr <- findCorrelation(predCor, cutoff = .75)
 x <- predictors[,-highlyCorDescr]
 
-library(magrittr)
+y<-trainds2$classe
+
+#library(magrittr)
 y <-as.numeric(trainds2$classe)   # change Y to numeric
 
-##unclass(y) %>% as.numeric 
+
 
 ##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
 # check for rank deficient coefs, those that are highly correlated
@@ -91,17 +94,15 @@ ctrl <- rfeControl(functions = lmFuncs,
                    method = "repeatedcv",
                    repeats = 5,
                    verbose = FALSE)
-# use classifiaction metric
+
 lmProfile <- rfe(x, y,
-                 sizes = subsets,metric ="Accuracy",size = 15,maximize = TRUE,
+                 sizes = subsets,maximize = TRUE,
                  rfeControl = ctrl)
 
-lmProfile
-
-
-
+TopVars <- lmProfile$optVariables
 
 ```
+
 
 ## Including Plots
 
