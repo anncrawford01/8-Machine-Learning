@@ -70,14 +70,13 @@ x <- predictors[,-highlyCorDescr]
 library(magrittr)
 y <-as.numeric(trainds2$classe)   # change Y to numeric
 
-unclass(y) %>% as.numeric 
+##unclass(y) %>% as.numeric 
 
 ##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
 # check for rank deficient coefs, those that are highly correlated
-fit <- lm(y ~ ., data=x)
+#fit <- lm(y ~ ., data=x)
 #predict(fit, trainds2)
-length(fit$coefficients) > fit$rank
-
+#length(fit$coefficients) > fit$rank
 
 subsets <- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
 
@@ -87,7 +86,6 @@ x <- as.data.frame(x)
 
 set.seed(10)
 
-
 ## repeated cross validation 
 ctrl <- rfeControl(functions = lmFuncs,
                    method = "repeatedcv",
@@ -95,7 +93,7 @@ ctrl <- rfeControl(functions = lmFuncs,
                    verbose = FALSE)
 # use classifiaction metric
 lmProfile <- rfe(x, y,
-                 sizes = subsets,metric ="Accuracy",size = 15,
+                 sizes = subsets,metric ="Accuracy",size = 15,maximize = TRUE,
                  rfeControl = ctrl)
 
 lmProfile

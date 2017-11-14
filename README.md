@@ -71,7 +71,8 @@ http://topepo.github.io/caret/model-training-and-tuning.html
 Udacity excellent explination of log transform
 https://www.youtube.com/watch?v=5571wc0iWCI
 
-
+## how to set up git for project
+https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-ghPagesSetup.md
 
 # Cool sites
 
