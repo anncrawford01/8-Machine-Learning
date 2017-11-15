@@ -24,8 +24,8 @@ The 20 expreiments for the trained model is located at https://d396qusza40orc.cl
 
 ```{r readData}
 #totorial site http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
-#setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
-setwd("C:/Data/Coursera/8-Machine-Learning")
+setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+#setwd("C:/Data/Coursera/8-Machine-Learning")
 
 #quizds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
 
@@ -33,7 +33,7 @@ quizds <-read.csv("pml-testing.csv",na.strings = c("NA","NaN","","#DIV/0!"))
 wtliftrawds <-read.csv("pml-training.csv",na.strings = c("NA","NaN","","#DIV/0!"))
 
 ```
-```{r examineData}
+```{r examinePreprocess}
 #19622 obs 159 variables - classe = y
 #str(trainds) 
 #pricipal comp anal https://www.analyticsvidhya.com/blog/2016/03/practical-guide-principal-component-analysis-python/
@@ -54,6 +54,8 @@ wtliftds <- wtliftrawds[,which(NAcnt < 19217) ]   ## != nrow(wtliftrawds))]
 
 #check for Class Imbalances 
 A <-table(wtliftrawds$classe)
+
+
 ```
 Prior to begining the modeling process, perform basic examination on the raw data. There are `r nrow(wtliftrawds) ` observations and `r ncol(wtliftrawds) ` variables with a total of `r sum(is.na(wtliftrawds)) `  missing values. `r ncol(wtliftrawds[,which(NAcnt == nrow(wtliftrawds))]) ` columns contain all empty values and will be removed.   The observations will be used to predict Classe.    The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations.  `r sapply(A, function(x,d = sum(A)) round(x/d,2)*100) ` for classe A, B, C, D, E respectvely.
 
@@ -76,17 +78,20 @@ testds  <- wtliftds[-trainIndex,]
 # remove meta data used for data collection and the independent variable classe 
 x <- subset(trainds, select=-c(X,user_name, new_window,cvtd_timestamp,classe ) )
 
+# remove near zero variance preditors
+x <- x[-nearZeroVar(x, saveMetrics= FALSE)]
 
 ## remove highly correlated predictors
-#predCor <- cor(x, use = "complete.obs")
-#highlyCorDescr <- findCorrelation(predCor, cutoff = .75)
-#x <- predictors[,-highlyCorDescr]
+CMx <- cor(x, use="complete.obs")
+highlyCorDescr <- findCorrelation(CMx, cutoff = 0.75)
+x <- x[,-highlyCorDescr]
 
 y<-trainds$classe
 
 #library(magrittr)
 #y <-as.numeric(trainds$classe)   # change Y to numeric
-
+```
+```{r trainmodel}
 
 ##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
 # check for rank deficient coefs, those that are highly correlated
@@ -96,45 +101,44 @@ y<-trainds$classe
 
 #https://www.rdocumentation.org/packages/caret/versions/6.0-77/topics/trainControl
 #http://topepo.github.io/caret/model-training-and-tuning.html
-fitControl <- trainControl(## 10-fold CV
+
+
+# 10 fold cross validation with 3 repeats
+fitControl <- trainControl(
                            method = "repeatedcv",
                            number = 10,
-                           ## repeated ten times
-                           repeats = 10
+                           repeats = 3
                            )
 
+## use models with built in feature seleciton
+## compare models https://machinelearningmastery.com/compare-models-and-select-the-best-using-the-caret-r-package/
+## model list for caret http://topepo.github.io/caret/available-models.html
+#Stochastic Gradient Boosting
 set.seed(825)
-Fit1 <- train(x,y,
+fitgbm <- train(x,y,
                  method = "gbm", 
                  trControl = fitControl,
-                
-                 ## This last option is actually one
-                 ## for gbm() that passes through
                  verbose = FALSE)
-Fit1
 
-#subsets <- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
+#CART or Ordinal Responses
+set.seed(825)
+fitrpart <- train(x,y,
+                 method = "rpart", 
+                 trControl = fitControl
+                 )
 
-#normalization <- preProcess(x)
-#x <- predict(normalization, x)
-#x <- as.data.frame(x)
-
-#set.seed(10)
-
-## repeated cross validation for 
-#ctrl <- rfeControl(functions = lmFuncs,
- #                  method = "repeatedcv",
-#                   repeats = 5,
- #                  verbose = FALSE)
-
-#lmProfile <- rfe(x, y,
-#                 sizes = subsets,maximize = TRUE,
-#                 rfeControl = ctrl)
+# collect resamples
+results <- resamples(list( GBM=fitgbm, RPART=fitrpart))
 
 
-## Classification
-##R functions for confusion matrices are in the e1071 package (the classAgreement function), 
-## the caret package (confusionMatrix), ##the mda (confusion) and others
+```
+```{r predcitonTest}
+
+predgbm <- predict(fitgbm,newdata=testds)
+
+# calculate out of sample error
+# confusionMatrix(actual, predicted, cutoff = 0.5)
+CM <- confusionMatrix(testds$classe, predgbm)
 
 ```
 
