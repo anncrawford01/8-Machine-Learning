@@ -24,8 +24,8 @@ The 20 expreiments for the trained model is located at https://d396qusza40orc.cl
 
 ```{r readData}
 #totorial site http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
-setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
-#setwd("C:/Data/Coursera/8-Machine-Learning")
+#setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+setwd("C:/Data/Coursera/8-Machine-Learning")
 
 #quizds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
 
@@ -74,7 +74,8 @@ testds  <- wtliftds[-trainIndex,]
 # Partion Data into training and test/holdback via resampling
 
 # remove meta data used for data collection and the independent variable classe 
-x <- subset(trainds, select=-c(X,user_name, classe, new_window,cvtd_timestamp ) )
+x <- subset(trainds, select=-c(X,user_name, new_window,cvtd_timestamp,classe ) )
+
 
 ## remove highly correlated predictors
 #predCor <- cor(x, use = "complete.obs")
@@ -84,34 +85,52 @@ x <- subset(trainds, select=-c(X,user_name, classe, new_window,cvtd_timestamp ) 
 y<-trainds$classe
 
 #library(magrittr)
-y <-as.numeric(trainds$classe)   # change Y to numeric
+#y <-as.numeric(trainds$classe)   # change Y to numeric
 
 
 ##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
 # check for rank deficient coefs, those that are highly correlated
-fit <- lm(y ~ ., data=x)
-xx <-predict(fit, trainds)
-length(fit$coefficients) > fit$rank
+#fit <- lm(y ~ ., data=x)
+#xx <-predict(fit, trainds)
+#length(fit$coefficients) > fit$rank
 
-subsets <- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
+#https://www.rdocumentation.org/packages/caret/versions/6.0-77/topics/trainControl
+#http://topepo.github.io/caret/model-training-and-tuning.html
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 10,
+                           ## repeated ten times
+                           repeats = 10
+                           )
 
-normalization <- preProcess(x)
-x <- predict(normalization, x)
-x <- as.data.frame(x)
+set.seed(825)
+Fit1 <- train(x,y,
+                 method = "gbm", 
+                 trControl = fitControl,
+                
+                 ## This last option is actually one
+                 ## for gbm() that passes through
+                 verbose = FALSE)
+Fit1
 
-set.seed(10)
+#subsets <- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
+
+#normalization <- preProcess(x)
+#x <- predict(normalization, x)
+#x <- as.data.frame(x)
+
+#set.seed(10)
 
 ## repeated cross validation for 
-ctrl <- rfeControl(functions = lmFuncs,
-                   method = "repeatedcv",
-                   repeats = 5,
-                   verbose = FALSE)
+#ctrl <- rfeControl(functions = lmFuncs,
+ #                  method = "repeatedcv",
+#                   repeats = 5,
+ #                  verbose = FALSE)
 
-lmProfile <- rfe(x, y,
-                 sizes = subsets,maximize = TRUE,
-                 rfeControl = ctrl)
+#lmProfile <- rfe(x, y,
+#                 sizes = subsets,maximize = TRUE,
+#                 rfeControl = ctrl)
 
-TopVars <- lmProfile$optVariables
 
 ## Classification
 ##R functions for confusion matrices are in the e1071 package (the classAgreement function), 
