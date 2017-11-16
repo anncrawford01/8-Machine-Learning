@@ -10,35 +10,31 @@ knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 ```
 ## Modeling Process
-Create a predictive model that classfies qualtity of a given weight lifing activity. 
+Create a predictive model that classifies quality of a given weight lifting activity. 
 The process will use the caret package and the following steps:
 
-1. Read data, examine, apply minimal data clean up
+1. Read data,examine and apply minimal data clean up
 2. Split data into test,train 
 3. Pick features using cross validation
 4. Pick prediction features
 5. Apply prediction to test
 6. Estimate out of sample error rate
-6. Use the trained model to predict 20 test cases.
-
 
 The data set used to train and test the model is located at https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv.
+
+After training the model it will be used to predict 20 test cases.
 The 20 expreiments for the trained model is located at https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv.
 
-```{r readData}
-#totorial site http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
-setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
-#setwd("C:/Data/Coursera/8-Machine-Learning")
-
-#quizds <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"))
+```{r readData }
+#tutorial site http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
+#setwd("D:/Data/Coursera/DataScience/8-Machine-Learning")
+setwd("C:/Data/Coursera/8-Machine-Learning")
 
 quizds <-read.csv("pml-testing.csv",na.strings = c("NA","NaN","","#DIV/0!"))
 wtliftrawds <-read.csv("pml-training.csv",na.strings = c("NA","NaN","","#DIV/0!"))
 
 ```
-```{r examinePreprocess}
-#19622 obs 159 variables - classe = y
-#str(trainds) 
+```{r examinePreprocess echo=FALSE}
 #pricipal comp anal https://www.analyticsvidhya.com/blog/2016/03/practical-guide-principal-component-analysis-python/
 #https://machinelearningmastery.com/feature-selection-with-the-caret-r-package/
 
@@ -60,14 +56,15 @@ A <-table(wtliftrawds$classe)
 
 ```
 ## Modeling Details
-Prior to begining the modeling process, perform basic examination on the raw data. There are `r nrow(wtliftrawds) ` observations and `r ncol(wtliftrawds) ` variables with a total of `r sum(is.na(wtliftrawds)) `  missing values. `r ncol(wtliftrawds[,which(NAcnt == nrow(wtliftrawds))]) ` columns contain all empty values and will be removed.   The observations will be used to predict Classe.    The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations.  `r sapply(A, function(x,d = sum(A)) round(x/d,2)*100) ` for classe A, B, C, D, E respectvely. Correlation and near zero variance analysis further reduced the number of variables.
+Prior to begining the modeling process, perform basic examination on the raw data. There are `r nrow(wtliftrawds) ` observations and `r ncol(wtliftrawds) ` variables with a total of `r sum(is.na(wtliftrawds)) `  missing values. `r ncol(wtliftrawds[,which(NAcnt == nrow(wtliftrawds))]) ` columns contain all empty values and will be removed.   The observations will be used to predict classe.  The observations are slightly imbalanced to the A classe result. The percetage of observations are `r sapply(A, function(x,d = sum(A)) round(x/d,2)*100) ` for classe A, B, C, D, E respectvely. Correlation and Near Zero Variance analysis was used to further reduced the number of variables.
 
 ### K Fold Cross Validation
-10 fold cross validation was coded into the traincontrol to faciliate repeated samplings for model training a feature selection. Gradient boosting was chosen because of the higher accurracy. 
+10 fold cross validation was coded into the traincontrol to faciliate repeated samplings for model training and feature selection using built in Recursive Feature Elimination of caret.
 
 ### Model Selection
-Two models, gbm and rpart were trained and compared.  These are popular classification models with built-in feature selection.  
+This is a classifcation prediction problem where observations are used to classify one of five classes. Two popluar classification models ,gbm and rpart were trained and compared.  These are caret classification models with built-in feature selection.  Gradient boosting was chosen because of the higher accurracy. 
 
+#### Split Data
 ```{r splitdata}
 set.seed(3456)
 trainIndex <- createDataPartition(wtliftds$classe, p = .7, 
@@ -78,11 +75,14 @@ trainds <- wtliftds[ trainIndex,]
 testds  <- wtliftds[-trainIndex,]
 
 ```
-```{r featureSelection}
+#### Basic Analysis
+The `r ncol(wtliftrawds) ` varables are reduced using correlation and zero variance analysis.  This first pass on variable reduction helped model performance. x vector is created to hold observations and y to hold the dependent variable classe. 
+
+```{r basicAnalysis}
 ##https://www.packtpub.com/mapt/book/big_data_and_business_intelligence/9781783984527/5/ch05lvl1sec38/feature-selection-for-svms
 ##http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf
 ## Use Caret built in Recursive Feature Elimination from rf, gbm and K-fold cross validation
-# Partion Data into training and test/holdback via resampling
+# Partition Data into training and test
 
 # remove meta data used for data collection and the independent variable classe 
 x <- subset(trainds, select=-c(X,user_name, new_window,cvtd_timestamp,classe ) )
@@ -97,20 +97,15 @@ x <- x[,-highlyCorDescr]
 
 y<-trainds$classe
 
-#library(magrittr)
-#y <-as.numeric(trainds$classe)   # change Y to numeric
 ```
-```{r trainmodel}
 
+#### K Fold cross validation and model selection
+Train control was called with the parameters for 10 k fold cross validation.  The same train control was used on both the rpart and gbm.
+```{r trainmodel}
 ##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
-# check for rank deficient coefs, those that are highly correlated
-#fit <- lm(y ~ ., data=x)
-#xx <-predict(fit, trainds)
-#length(fit$coefficients) > fit$rank
 
 #https://www.rdocumentation.org/packages/caret/versions/6.0-77/topics/trainControl
 #http://topepo.github.io/caret/model-training-and-tuning.html
-
 
 # 10 fold cross validation with 3 repeats
 fitControl <- trainControl(
@@ -140,8 +135,9 @@ fitrpart <- train(x,y,
 # collect resamples
 results <- resamples(list( GBM=fitgbm, RPART=fitrpart))
 
-
 ```
+#### Out of sample error rate.
+
 ```{r predcitonTest}
 
 predgbm <- predict(fitgbm,newdata=testds)
@@ -151,8 +147,6 @@ predgbm <- predict(fitgbm,newdata=testds)
 CM <- confusionMatrix(testds$classe, predgbm)
 
 ```
-
-
 ## Including Plots
 
 You can also embed plots, for example:
