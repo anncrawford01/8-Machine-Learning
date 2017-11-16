@@ -10,14 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 ```
 ## Modeling Process
-Create a predictive model that classfies qualtity of a given weight lifing activity.  The process will use the caret package and the following steps:
+Create a predictive model that classfies qualtity of a given weight lifing activity. 
+The process will use the caret package and the following steps:
 
-1. Split data into test,train 60 training 20 test 20 validation
-2. Pick features using cross validation
-3. Pick prediction features
-4. Apply prediction to test
-5. Estimate out of sample error rate
+1. Read data, examine, apply minimal data clean up
+2. Split data into test,train 
+3. Pick features using cross validation
+4. Pick prediction features
+5. Apply prediction to test
+6. Estimate out of sample error rate
 6. Use the trained model to predict 20 test cases.
+
 
 The data set used to train and test the model is located at https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv.
 The 20 expreiments for the trained model is located at https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv.
@@ -55,9 +58,15 @@ wtliftds <- wtliftrawds[,which(NAcnt < 19217) ]   ## != nrow(wtliftrawds))]
 #check for Class Imbalances 
 A <-table(wtliftrawds$classe)
 
-
 ```
-Prior to begining the modeling process, perform basic examination on the raw data. There are `r nrow(wtliftrawds) ` observations and `r ncol(wtliftrawds) ` variables with a total of `r sum(is.na(wtliftrawds)) `  missing values. `r ncol(wtliftrawds[,which(NAcnt == nrow(wtliftrawds))]) ` columns contain all empty values and will be removed.   The observations will be used to predict Classe.    The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations.  `r sapply(A, function(x,d = sum(A)) round(x/d,2)*100) ` for classe A, B, C, D, E respectvely.
+## Modeling Details
+Prior to begining the modeling process, perform basic examination on the raw data. There are `r nrow(wtliftrawds) ` observations and `r ncol(wtliftrawds) ` variables with a total of `r sum(is.na(wtliftrawds)) `  missing values. `r ncol(wtliftrawds[,which(NAcnt == nrow(wtliftrawds))]) ` columns contain all empty values and will be removed.   The observations will be used to predict Classe.    The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations.  `r sapply(A, function(x,d = sum(A)) round(x/d,2)*100) ` for classe A, B, C, D, E respectvely. Correlation and near zero variance analysis further reduced the number of variables.
+
+### K Fold Cross Validation
+10 fold cross validation was coded into the traincontrol to faciliate repeated samplings for model training a feature selection. Gradient boosting was chosen because of the higher accurracy. 
+
+### Model Selection
+Two models, gbm and rpart were trained and compared.  These are popular classification models with built-in feature selection.  
 
 ```{r splitdata}
 set.seed(3456)
@@ -113,13 +122,14 @@ fitControl <- trainControl(
 ## use models with built in feature seleciton
 ## compare models https://machinelearningmastery.com/compare-models-and-select-the-best-using-the-caret-r-package/
 ## model list for caret http://topepo.github.io/caret/available-models.html
+## gbm explained https://www.analyticsvidhya.com/blog/2015/09/complete-guide-boosting-methods/
 #Stochastic Gradient Boosting
 set.seed(825)
 fitgbm <- train(x,y,
                  method = "gbm", 
                  trControl = fitControl,
                  verbose = FALSE)
-
+# rpart explained https://www.statmethods.net/advstats/cart.html
 #CART or Ordinal Responses
 set.seed(825)
 fitrpart <- train(x,y,

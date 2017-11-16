@@ -127,7 +127,8 @@ $(document).ready(function () {
 <h2>Modeling Process</h2>
 <p>Create a predictive model that classfies qualtity of a given weight lifing activity. The process will use the caret package and the following steps:</p>
 <ol style="list-style-type: decimal">
-<li>Split data into test,train 60 training 20 test 20 validation</li>
+<li>Read data, examine, apply minimal data clean up</li>
+<li>Split data into test,train</li>
 <li>Pick features using cross validation</li>
 <li>Pick prediction features</li>
 <li>Apply prediction to test</li>
@@ -154,16 +155,26 @@ Missing &lt;- table(NAcnt)
 
 ## 2 groups of predictors
 ## 67 variables with this count
-Nbr2 &lt;- wtliftrawds[,which(NAcnt == 19216)]
+Nbr2 &lt;- wtliftrawds[,which(NAcnt  == 19216)]
 ## 60 varables that have no missing values 
 NoNA &lt;- wtliftrawds[,which(NAcnt == 0)]
 
-## remove varables with No information i.e all NA's
-wtliftds &lt;- wtliftrawds[,which(NAcnt != nrow(wtliftrawds))]
+## remove varables with No information i.e all NA's and mostly NA
+wtliftds &lt;- wtliftrawds[,which(NAcnt &lt; 19217) ]   ## != nrow(wtliftrawds))]
 
 #check for Class Imbalances 
 A &lt;-table(wtliftrawds$classe)</code></pre>
-<p>Prior to begining the moding process, perform basic examination on the raw data. There are 19622 observations and 160 variables with a total of 1925102 missing values. 6 columns contain all empty values and will be removed. The observations will be used to predict Classe. The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations. 28, 19, 17, 16, 18 for classe A, B, C, D, E respectvely.</p>
+</div>
+<div id="modeling-details" class="section level2">
+<h2>Modeling Details</h2>
+<p>Prior to begining the modeling process, perform basic examination on the raw data. There are 19622 observations and 160 variables with a total of 1925102 missing values. 6 columns contain all empty values and will be removed. The observations will be used to predict Classe. The observations are slightly imbalanced to the A classe result as shown by this table of percetage of observations. 28, 19, 17, 16, 18 for classe A, B, C, D, E respectvely. Correlation and near zero variance analysis further reduced the number of variables.</p>
+<div id="k-fold-cross-validation" class="section level3">
+<h3>K Fold Cross Validation</h3>
+<p>10 fold cross validation was coded into the traincontrol to faciliate repeated samplings for model training a feature selection. Gradient boosting was chosen because of the higher accurracy.</p>
+</div>
+<div id="model-selection" class="section level3">
+<h3>Model Selection</h3>
+<p>Two models, gbm and rpart were trained and compared. These are popular classification models with built-in feature selection.</p>
 <pre class="r"><code>set.seed(3456)
 trainIndex &lt;- createDataPartition(wtliftds$classe, p = .7, 
                                   list = FALSE, 
@@ -176,198 +187,73 @@ testds  &lt;- wtliftds[-trainIndex,]</code></pre>
 ## Use Caret built in Recursive Feature Elimination from rf, gbm and K-fold cross validation
 # Partion Data into training and test/holdback via resampling
 
-# remove meta data used for data collection and the independent variabel classe 
-x &lt;- subset(trainds, select=-c(X,user_name, classe, cvtd_timestamp, new_window,amplitude_yaw_belt, amplitude_yaw_dumbbell, amplitude_yaw_forearm ))
+# remove meta data used for data collection and the independent variable classe 
+x &lt;- subset(trainds, select=-c(X,user_name, new_window,cvtd_timestamp,classe ) )
+
+# remove near zero variance preditors
+x &lt;- x[-nearZeroVar(x, saveMetrics= FALSE)]
 
 ## remove highly correlated predictors
-#predCor &lt;- cor(x, use = &quot;complete.obs&quot;)
-#highlyCorDescr &lt;- findCorrelation(predCor, cutoff = .75)
-#x &lt;- predictors[,-highlyCorDescr]
+CMx &lt;- cor(x, use=&quot;complete.obs&quot;)
+highlyCorDescr &lt;- findCorrelation(CMx, cutoff = 0.75)
+x &lt;- x[,-highlyCorDescr]
 
 y&lt;-trainds$classe
 
 #library(magrittr)
-y &lt;-as.numeric(trainds$classe)   # change Y to numeric
-
-
-
-##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
+#y &lt;-as.numeric(trainds$classe)   # change Y to numeric</code></pre>
+<pre class="r"><code>##https://stackoverflow.com/questions/26558631/predict-lm-in-a-loop-warning-prediction-from-a-rank-deficient-fit-may-be-mis
 # check for rank deficient coefs, those that are highly correlated
 #fit &lt;- lm(y ~ ., data=x)
-#predict(fit, trainds2)
+#xx &lt;-predict(fit, trainds)
 #length(fit$coefficients) &gt; fit$rank
 
-subsets &lt;- c(200,205, 208, 222, 230, 150, 148,175,180, 160 )
+#https://www.rdocumentation.org/packages/caret/versions/6.0-77/topics/trainControl
+#http://topepo.github.io/caret/model-training-and-tuning.html
 
-normalization &lt;- preProcess(x)
-x &lt;- predict(normalization, x)
-x &lt;- as.data.frame(x)
 
-set.seed(10)
+# 10 fold cross validation with 3 repeats
+fitControl &lt;- trainControl(
+                           method = &quot;repeatedcv&quot;,
+                           number = 10,
+                           repeats = 3
+                           )
 
-## repeated cross validation for 
-ctrl &lt;- rfeControl(functions = lmFuncs,
-                   method = &quot;repeatedcv&quot;,
-                   repeats = 5,
-                   verbose = FALSE)
+## use models with built in feature seleciton
+## compare models https://machinelearningmastery.com/compare-models-and-select-the-best-using-the-caret-r-package/
+## model list for caret http://topepo.github.io/caret/available-models.html
+## gbm explained https://www.analyticsvidhya.com/blog/2015/09/complete-guide-boosting-methods/
+#Stochastic Gradient Boosting
+set.seed(825)
+fitgbm &lt;- train(x,y,
+                 method = &quot;gbm&quot;, 
+                 trControl = fitControl,
+                 verbose = FALSE)</code></pre>
+<pre><code>## Loading required package: survival</code></pre>
+<pre><code>## 
+## Attaching package: 'survival'</code></pre>
+<pre><code>## The following object is masked from 'package:caret':
+## 
+##     cluster</code></pre>
+<pre><code>## Loading required package: splines</code></pre>
+<pre><code>## Loading required package: parallel</code></pre>
+<pre><code>## Loaded gbm 2.1.3</code></pre>
+<pre class="r"><code># rpart explained https://www.statmethods.net/advstats/cart.html
+#CART or Ordinal Responses
+set.seed(825)
+fitrpart &lt;- train(x,y,
+                 method = &quot;rpart&quot;, 
+                 trControl = fitControl
+                 )
 
-lmProfile &lt;- rfe(x, y,
-                 sizes = subsets,maximize = TRUE,
-                 rfeControl = ctrl)</code></pre>
-<pre><code>## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
+# collect resamples
+results &lt;- resamples(list( GBM=fitgbm, RPART=fitrpart))</code></pre>
+<pre class="r"><code>predgbm &lt;- predict(fitgbm,newdata=testds)
 
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading
-
-## Warning in predict.lm(object, x): prediction from a rank-deficient fit may
-## be misleading</code></pre>
-<pre class="r"><code>TopVars &lt;- lmProfile$optVariables
-
-## Classification
-##R functions for confusion matrices are in the e1071 package (the classAgreement function), 
-## the caret package (confusionMatrix), ##the mda (confusion) and others</code></pre>
+# calculate out of sample error
+# confusionMatrix(actual, predicted, cutoff = 0.5)
+CM &lt;- confusionMatrix(testds$classe, predgbm)</code></pre>
+</div>
 </div>
 <div id="including-plots" class="section level2">
 <h2>Including Plots</h2>
